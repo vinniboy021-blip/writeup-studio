@@ -1,0 +1,2 @@
+# Configuração
+DATABASE_URL, SECRET_KEY, SESSION_TTL_HOURS, MAX_UPLOAD_BYTES, UPLOAD_DIR e CORS_ORIGINS são fundamentais. Em produção use ENVIRONMENT=production e COOKIE_SECURE=true. STORAGE_BACKEND=local é apenas desenvolvimento; para MinIO/S3 configure S3_ENDPOINT_URL, S3_BUCKET, S3_ACCESS_KEY, S3_SECRET_KEY e S3_REGION. AI_ENABLED habilita IA. KALI_ENABLED, KALI_MCP_URL, KALI_MCP_TOKEN e KALI_TIMEOUT_SECONDS controlam Kali MCP. IA e Kali ficam desligados por padrão. Segredos devem vir do ambiente e nunca ser commitados.

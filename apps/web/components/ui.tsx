@@ -1,0 +1,14 @@
+"use client";
+import {useEffect,useRef,type ReactNode} from 'react';
+import {useQuery} from '@tanstack/react-query';
+import {api,items,type Row} from '../lib/api';
+export function useData(path:string,enabled=true){return useQuery({queryKey:[path],queryFn:()=>api(path),enabled,retry:1});}
+export function Button({children,variant='',...props}:React.ButtonHTMLAttributes<HTMLButtonElement>&{variant?:string}){return <button className={`button ${variant}`} {...props}>{children}</button>;}
+export function ErrorBox({error}:{error:unknown}){return error?<p role="alert" className="error">{error instanceof Error?error.message:String(error)}</p>:null;}
+export function Loading(){return <p role="status" className="muted">Carregando…</p>;}
+export function Empty({children='Nenhum registro encontrado.'}:{children?:ReactNode}){return <p className="empty">{children}</p>;}
+export function Modal({title,onClose,children}:{title:string;onClose:()=>void;children:ReactNode}){const ref=useRef<HTMLDialogElement>(null);useEffect(()=>{ref.current?.showModal();return()=>ref.current?.close();},[]);return <dialog ref={ref} onCancel={e=>{e.preventDefault();onClose();}} className="modal" aria-label={title}><div className="modal-head"><h2>{title}</h2><Button aria-label="Fechar diálogo" onClick={onClose}>×</Button></div>{children}</dialog>;}
+export function Field({label,children}:{label:string;children:ReactNode}){return <label className="field"><span>{label}</span>{children}</label>;}
+export function ResourceSelect({path,label,value,onChange,optional=true}:{path:string;label:string;value:string;onChange:(value:string)=>void;optional?:boolean}){const data=useData(path);return <Field label={label}><select value={value} onChange={e=>onChange(e.target.value)}>{optional&&<option value="">Workspace pessoal / nenhum</option>}{items(data.data).map((row:Row)=><option key={row.id} value={row.id}>{row.name||row.title||row.email}</option>)}</select></Field>;}
+export function Table({rows,columns,onOpen}:{rows:Row[];columns:{key:string;label:string;render?:(row:Row)=>ReactNode}[];onOpen?:(row:Row)=>void}){if(!rows.length)return <Empty/>;return <div className="table-scroll"><table><thead><tr>{columns.map(c=><th scope="col" key={c.key}>{c.label}</th>)}{onOpen&&<th scope="col">Ação</th>}</tr></thead><tbody>{rows.map(row=><tr key={row.id}>{columns.map(c=><td key={c.key}>{c.render?c.render(row):String(row[c.key]??'—')}</td>)}{onOpen&&<td><Button onClick={()=>onOpen(row)}>Abrir</Button></td>}</tr>)}</tbody></table></div>;}
+export function Pager({page,total,pageSize=20,onChange}:{page:number;total:number;pageSize?:number;onChange:(page:number)=>void}){return <div className="pager"><Button disabled={page<=1} onClick={()=>onChange(page-1)}>Anterior</Button><span>Página {page} · {total} resultados</span><Button disabled={page*pageSize>=total} onClick={()=>onChange(page+1)}>Próxima</Button></div>;}

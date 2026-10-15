@@ -1,0 +1,16 @@
+.git
+.env*
+!.env.example
+!.env.production.example
+**/.venv
+**/node_modules
+**/.next
+**/__pycache__
+**/.pytest_cache
+**/.coverage
+**/data
+.runtime*
+backups
+infra/nginx/certs
+apps/web/playwright-report
+apps/web/test-results

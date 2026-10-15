@@ -1,0 +1,26 @@
+# Use: docker compose --env-file .env.production -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# HTTPS requires infra/nginx/certs/fullchain.pem + privkey.pem.
+services:
+  migrate:
+    env_file: !override [.env.production]
+    environment: &production
+      ENVIRONMENT: production
+      COOKIE_SECURE: "true"
+      CORS_ORIGINS: ${PUBLIC_ORIGIN:?Configure HTTPS PUBLIC_ORIGIN}
+      RATE_LIMIT_BACKEND: redis
+      QUEUE_ENABLED: "true"
+  api:
+    env_file: !override [.env.production]
+    environment: *production
+  worker:
+    env_file: !override [.env.production]
+    environment: *production
+  backup:
+    env_file: !override [.env.production]
+    environment: *production
+  nginx:
+    ports: !override ["${APP_BIND:-0.0.0.0}:80:80", "${APP_BIND:-0.0.0.0}:443:443"]
+    volumes: !override
+      - ./infra/nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./infra/nginx/certs:/etc/nginx/certs:ro
+      - ./infra/nginx/proxy_params_studio:/etc/nginx/proxy_params_studio:ro

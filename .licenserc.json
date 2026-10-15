@@ -1,0 +1,6 @@
+{
+  "license": "MIT",
+  "copyright": "CTF Writeup Studio contributors",
+  "spdx": "MIT",
+  "paths": ["apps", "packages", "workers", "scripts"]
+}

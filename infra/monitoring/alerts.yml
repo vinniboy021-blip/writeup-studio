@@ -1,0 +1,28 @@
+groups:
+  - name: ctf-studio
+    rules:
+      - alert: CtfApiDown
+        expr: up{job="ctf-api"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations: {summary: "API CTF indisponível há mais de 2 minutos"}
+      - alert: CtfApiErrors
+        expr: sum(rate(ctf_api_requests_total{status=~"5.."}[5m])) / clamp_min(sum(rate(ctf_api_requests_total[5m])), 0.001) > 0.05
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: "Taxa de erros HTTP 5xx acima de 5%"}
+      - alert: CtfApiLatency
+        expr: histogram_quantile(0.95, sum by(le) (rate(ctf_api_request_seconds_bucket[5m]))) > 2
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: "Latência p95 da API acima de 2 segundos"}
+      - alert: CtfPostgresDown
+        expr: pg_up == 0
+        for: 1m
+        labels: {severity: critical}
+        annotations: {summary: "PostgreSQL indisponível"}
+      - alert: CtfRedisDown
+        expr: redis_up == 0
+        for: 1m
+        labels: {severity: critical}
+        annotations: {summary: "Redis indisponível; filas e login podem falhar"}

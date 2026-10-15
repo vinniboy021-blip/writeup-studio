@@ -1,0 +1,211 @@
+name: ctf-writeup-studio
+
+x-api: &api
+  build:
+    context: .
+    dockerfile: apps/api/Dockerfile
+  env_file: .env
+  environment:
+    DATABASE_URL: ${DATABASE_URL:?Execute python scripts/setup.py}
+    REDIS_URL: redis://:${REDIS_PASSWORD:?Execute setup}@redis:6379/0
+    ENVIRONMENT: development
+    COOKIE_SECURE: "false"
+    CORS_ORIGINS: ${PUBLIC_ORIGIN:-http://localhost:8080}
+    RATE_LIMIT_BACKEND: redis
+    QUEUE_ENABLED: "true"
+    QUEUE_NAME: ctf-studio
+    UPLOAD_DIR: /data/uploads
+    STORAGE_BACKEND: s3
+    S3_ENDPOINT_URL: http://minio:9000
+    S3_BUCKET: ${S3_BUCKET:-ctf-evidences}
+    S3_ACCESS_KEY: ${S3_ACCESS_KEY:?Execute setup}
+    S3_SECRET_KEY: ${S3_SECRET_KEY:?Execute setup}
+    KALI_MCP_URL: ${KALI_MCP_URL:-http://kali-mcp:8080/mcp}
+    OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
+  volumes: [uploads:/data]
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  restart: unless-stopped
+
+services:
+  db:
+    image: postgres:16.8-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ctf}
+      POSTGRES_USER: ${POSTGRES_USER:-ctf}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Execute setup}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+  redis:
+    image: redis:7.4.2-alpine
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Execute setup}
+    command: [/bin/sh, -ec, 'exec redis-server --appendonly yes --requirepass "$${REDIS_PASSWORD}"']
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: [CMD-SHELL, 'REDISCLI_AUTH="$${REDIS_PASSWORD}" redis-cli ping | grep -q PONG']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Execute setup}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Execute setup}
+    volumes: [objectdata:/data]
+    restart: unless-stopped
+  minio-init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    entrypoint: [/bin/sh, /scripts/minio-init.sh]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Execute setup}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Execute setup}
+      S3_BUCKET: ${S3_BUCKET:-ctf-evidences}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?Execute setup}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?Execute setup}
+    volumes: [./scripts/minio-init.sh:/scripts/minio-init.sh:ro]
+    depends_on: [minio]
+    restart: "no"
+  migrate:
+    <<: *api
+    command: [alembic, upgrade, head]
+    restart: "no"
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      minio-init: {condition: service_completed_successfully}
+  api:
+    <<: *api
+    command: [uvicorn, app.main:app, --host, 0.0.0.0, --port, "8000", --no-access-log, --no-server-header]
+    expose: ["8000"]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/ready', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+  worker:
+    <<: *api
+    command: [python, -m, workers.run]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+  web:
+    build: ./apps/web
+    environment:
+      API_INTERNAL_URL: http://api:8000
+      NEXT_TELEMETRY_DISABLED: "1"
+    expose: ["3000"]
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    depends_on:
+      api: {condition: service_healthy}
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: unless-stopped
+  nginx:
+    image: nginx:1.28.0-alpine
+    ports: ["${APP_BIND:-127.0.0.1}:${APP_PORT:-8080}:80"]
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infra/nginx/proxy_params_studio:/etc/nginx/proxy_params_studio:ro
+    depends_on:
+      api: {condition: service_healthy}
+      web: {condition: service_healthy}
+    restart: unless-stopped
+  backup:
+    <<: *api
+    profiles: [maintenance]
+    user: "${BACKUP_UID:-10001}:${BACKUP_GID:-10001}"
+    command: [python, /app/scripts/backup.py, backup, --output, /backups]
+    volumes:
+      - ./backups:/backups
+      - uploads:/data
+    restart: "no"
+    depends_on:
+      db: {condition: service_healthy}
+      minio-init: {condition: service_completed_successfully}
+  kali-mcp:
+    profiles: [kali]
+    build:
+      context: .
+      dockerfile: infra/kali/Dockerfile
+    environment:
+      KALI_BRIDGE_TOKEN: ${KALI_MCP_TOKEN:-}
+    expose: ["8080"]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: [/tmp:size=64m,mode=1777]
+    restart: unless-stopped
+  ollama:
+    profiles: [ai]
+    image: ollama/ollama:0.6.5
+    volumes: [ollama:/root/.ollama]
+    expose: ["11434"]
+    restart: unless-stopped
+  prometheus:
+    profiles: [monitoring]
+    image: prom/prometheus:v3.2.1
+    command: [--config.file=/etc/prometheus/prometheus.yml, --storage.tsdb.retention.time=15d]
+    volumes:
+      - ./infra/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus:/prometheus
+    expose: ["9090"]
+    depends_on: [api, postgres-exporter, redis-exporter]
+    restart: unless-stopped
+  postgres-exporter:
+    profiles: [monitoring]
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.17.1
+    environment:
+      DATA_SOURCE_URI: db:5432/${POSTGRES_DB:-ctf}?sslmode=disable
+      DATA_SOURCE_USER: ${POSTGRES_USER:-ctf}
+      DATA_SOURCE_PASS: ${POSTGRES_PASSWORD:?Execute setup}
+    expose: ["9187"]
+    depends_on: [db]
+    restart: unless-stopped
+  redis-exporter:
+    profiles: [monitoring]
+    image: oliver006/redis_exporter:v1.69.0-alpine
+    environment:
+      REDIS_ADDR: redis://redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Execute setup}
+    expose: ["9121"]
+    depends_on: [redis]
+    restart: unless-stopped
+  grafana:
+    profiles: [monitoring]
+    image: grafana/grafana:11.6.0
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Execute setup}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    ports: ["127.0.0.1:${GRAFANA_PORT:-3001}:3000"]
+    volumes:
+      - grafana:/var/lib/grafana
+      - ./infra/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on: [prometheus]
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+  objectdata:
+  uploads:
+  ollama:
+  prometheus:
+  grafana:
