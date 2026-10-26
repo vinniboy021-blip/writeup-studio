@@ -1,24 +1,35 @@
+# Secrets and local runtime
 .env
-.env.production
-.env.*.local
+.env.*
+!.env.example
+*.pem
+*.key
+*.db
+*.sqlite*
+data/
+uploads/
+backups/
+infra/nginx/certs/
+
+# Python
 .venv/
-node_modules/
-.next/
 __pycache__/
 *.py[cod]
 .pytest_cache/
+**/.pytest_cache/
 .ruff_cache/
+**/.ruff_cache/
 .coverage
 coverage.xml
 htmlcov/
-data/
-*.db
-backups/
-.runtime*/
-infra/nginx/certs/*.pem
-infra/nginx/certs/*.key
-infra/nginx/certs/*.crt
-playwright-report/
-test-results/
-*.egg-info/
-apps/web/next-env.d.ts
+
+# Node
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
+# Reports and local infrastructure
+.runtime-*/
+docs/coverage.json
+.DS_Store
