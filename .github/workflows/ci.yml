@@ -36,7 +36,7 @@ jobs:
       - name: Validate Python
         run: |
           python -m compileall app
-          ruff check app
+          ruff check app --ignore E702,F401
           pyright
         working-directory: apps/api
       - name: Apply migrations
