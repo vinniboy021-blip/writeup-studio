@@ -5,7 +5,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_DISABLE_PIP_VERSION_CHECK=1
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends libmagic1 libpq5 liblz4-1 libzstd1 libssl3 && rm -rf /var/lib/apt/lists/*
 COPY --from=pgtools /usr/local/bin/pg_dump /usr/local/bin/pg_restore /usr/local/bin/
-COPY apps/api/pyproject.toml ./
+COPY apps/api/pyproject.toml ./\nCOPY apps/api/requirements.lock ./requirements.lock
 COPY apps/api/app ./app
 RUN --mount=type=secret,id=proxy_ca \
     if [ -f /run/secrets/proxy_ca ]; then PIP_CERT=/run/secrets/proxy_ca pip install --no-cache-dir .; \
