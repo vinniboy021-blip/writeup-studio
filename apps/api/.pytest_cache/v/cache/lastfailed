@@ -1,7 +1,0 @@
-{
-  "tests/test_infrastructure.py::test_real_postgresql_search_content_is_paginated_and_private": true,
-  "tests/test_infrastructure.py::test_real_postgresql_two_sessions_cas_preserves_only_winning_revision": true,
-  "tests/test_infrastructure.py::test_real_rq_worker_produces_pdf_and_updates_state": true,
-  "tests/test_migrations.py::test_postgresql_migrations_are_reversible": true,
-  "tests/test_security_regression.py::test_markdown_export_strips_active_links_and_markup_but_preserves_literal_commands": true
-}
