@@ -94,7 +94,7 @@ jobs:
         with: {python-version: "3.12"}
       - name: Install backup tools
         working-directory: apps/api
-        run: pip install -e .
+        run: pip install -e '.[dev]'
       - name: Run backup unit and integrity checks
         env:
           ENVIRONMENT: test
