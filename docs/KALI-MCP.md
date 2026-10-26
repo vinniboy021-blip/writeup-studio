@@ -1,50 +1,48 @@
 # Integração Kali Linux / Kali MCP
 
-A API aceita um servidor MCP externo configurado por variáveis de ambiente:
+A integração é opcional e vem desabilitada. Ela usa um cliente MCP Streamable HTTP configurado por operação:
 
 - `KALI_ENABLED=true`
-- `KALI_MCP_URL=http://host:porta`
-- `KALI_MCP_TOKEN` opcional, enviado como Bearer
-- `KALI_TIMEOUT_SECONDS=30`
+- `KALI_MCP_URL=https://host-interno/mcp`
+- `KALI_MCP_TOKEN` com pelo menos 32 caracteres
+- `KALI_ALLOWED_TOOLS` limitado às ferramentas aprovadas
+- `KALI_TIMEOUT_SECONDS` e `KALI_MAX_OUTPUT_BYTES`
 
-O servidor deve expor `GET /health` e um endpoint JSON-RPC `POST /mcp` compatível com `tools/call`. A aplicação envia a chamada `exec` com `command` e `timeout`.
+A API não aceita comandos, caminhos, URLs ou argumentos arbitrários enviados pelo usuário. As únicas ferramentas aceitas são:
 
-Por segurança, a integração vem desligada. Cada execução exige autenticação, CSRF e `confirm=true`, é registrada em `audit_logs` e passa por uma allowlist de comandos de coleta/documentação (`whoami`, `id`, `uname`, `file`, `sha256sum`, `strings`, `cat`, `head`, `tail`, `wc`, `ip` e `ss`). Composição shell, redirecionamentos e ferramentas de exploração são bloqueados. O resultado retorna proveniência `kali-mcp` e exige revisão humana antes de entrar em um writeup.
+| Ferramenta | Entrada | Resultado |
+|---|---|---|
+| `system_info` | objeto vazio | informações do ambiente de coleta |
+| `artifact_hash` | bytes base64 + nome | SHA-256 |
+| `artifact_file` | bytes base64 + nome | MIME identificado por `file` |
+| `artifact_strings` | bytes base64 + nome | strings imprimíveis |
+| `artifact_json_summary` | bytes base64 + nome | tipo, chaves limitadas e contagem |
 
-O projeto não inclui uma imagem Kali MCP porque não existe um padrão único de servidor ou imagem oficial confiável. Conecte um servidor MCP mantido pela sua equipe, restrito a uma rede de laboratório autorizada. Não exponha o endpoint à internet pública.
+O fluxo é:
 
-Rotas: `GET /api/v1/kali/status` e `POST /api/v1/kali/run`.
+1. O usuário autentica na plataforma e confirma a execução.
+2. Para artefatos, o backend lê uma evidência já autorizada e envia os bytes ao MCP.
+3. O bridge valida tamanho, base64, nome e schema; executa somente ferramentas fixas com `shell=False`.
+4. O resultado é armazenado como nova evidência JSON, com SHA-256, horário de início/fim, ferramenta, evidência de origem e revisão humana obrigatória.
 
-## Contrato JSON
+## Protocolo
 
-Requisição para execução:
+O servidor deve responder a `initialize`, `notifications/initialized`, `tools/list` e `tools/call` JSON-RPC 2.0. O cabeçalho Bearer é obrigatório no bridge e a versão MCP negociada é preservada no cliente.
 
-    {
-      "command": "sha256sum evidence.txt",
-      "evidence_id": "uuid-opcional",
-      "confirm": true
-    }
+Exemplo de chamada:
 
-Resposta normalizada:
+```json
+{"jsonrpc":"2.0","id":"uuid","method":"tools/call","params":{"name":"artifact_hash","arguments":{"artifact_base64":"...","name":"capture.bin"}}}
+```
 
-    {
-      "command": "sha256sum evidence.txt",
-      "result": {"jsonrpc": "2.0", "result": {}},
-      "provenance": {"source": "kali-mcp", "review_required": true}
-    }
+O bridge interno da aplicação está em `app.modules.integrations.kali_bridge`; ele não expõe documentação OpenAPI e exige `KALI_BRIDGE_TOKEN` ou `KALI_MCP_TOKEN` com 32 caracteres. A imagem opcional em `infra/kali/Dockerfile` deve ficar em rede de laboratório isolada.
 
-O servidor MCP precisa aceitar uma mensagem JSON-RPC equivalente a:
+Não use esta integração para executar exploração arbitrária ou comandos fornecidos por usuários. O resultado é uma observação com proveniência, não uma descoberta automaticamente confirmada.
 
-    {"jsonrpc":"2.0","id":"request-id","method":"tools/call","params":{"name":"exec","arguments":{"command":"...","timeout":30}}}
+Rotas da API:
 
-## Operação recomendada
+- `GET /api/v1/kali/status`
+- `GET /api/v1/kali/tools`
+- `POST /api/v1/kali/run`
 
-Execute Kali em uma VM ou container isolado, com rede de laboratório, usuário sem privilégios e diretório de evidências montado como somente leitura quando possível. Restrinja o endpoint MCP por firewall ou rede interna. Rotacione o token e revise os registros de auditoria. O CTF Writeup Studio não considera o resultado do Kali uma descoberta confirmada: o usuário deve registrar origem, horário, contexto e interpretação.
-
-## Falhas e códigos
-
-- 401: sessão ausente ou expirada.
-- 403: comando fora da allowlist ou composição shell bloqueada.
-- 428: confirmação explícita ausente.
-- 502: servidor MCP indisponível ou timeout.
-- 503: integração não configurada.
+Códigos comuns: 401 token/sessão inválida, 403 ferramenta ou equipe não autorizada, 428 confirmação ausente, 502 MCP indisponível, 503 integração desligada.
