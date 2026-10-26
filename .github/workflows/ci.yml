@@ -1,22 +1,103 @@
 name: CI
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+
 jobs:
   api:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: ctf_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d ctf_test"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: {python-version: '3.12'}
-      - run: pip install -e apps/api
-      - run: python -m compileall apps/api/app
-      - run: pytest apps/api/tests
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: apps/api/pyproject.toml
+      - name: Install API and development tools
+        working-directory: apps/api
+        run: python -m pip install --upgrade pip && pip install '.[dev]'
+      - name: Validate Python
+        run: |
+          python -m compileall apps/api/app
+          ruff check apps/api/app apps/api/tests
+          pyright
+        working-directory: apps/api
+      - name: Apply migrations
+        working-directory: apps/api
+        env:
+          ENVIRONMENT: test
+          DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/ctf_test
+        run: alembic upgrade head
+      - name: Test API
+        working-directory: apps/api
+        env:
+          ENVIRONMENT: test
+          DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/ctf_test
+          TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/ctf_test
+          TEST_REDIS_URL: redis://127.0.0.1:6379/0
+        run: pytest --cov=app --cov-report=term-missing --cov-fail-under=80
+
   web:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: {node-version: '22'}
-      - run: npm install
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Install frontend
         working-directory: apps/web
-      - run: npm run build
+        run: npm ci
+      - name: Validate frontend
         working-directory: apps/web
+        run: |
+          npm run typecheck
+          npm run lint
+          npm test -- --run
+          npm run build
+
+  backup:
+    runs-on: ubuntu-latest
+    needs: api
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: ctf_backup
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d ctf_backup"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - name: Install backup tools
+        working-directory: apps/api
+        run: pip install -e .
+      - name: Run backup unit and integrity checks
+        env:
+          ENVIRONMENT: test
+          DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5433/ctf_backup
+        run: pytest tests/infra/test_backups.py -q
+        working-directory: apps/api
