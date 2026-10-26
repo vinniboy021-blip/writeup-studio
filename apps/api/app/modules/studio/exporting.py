@@ -47,7 +47,7 @@ def sanitize_markdown(content):
     cleaned = "".join(part if index % 2 else bleach.clean(part, tags=[], strip=True)
                    for index, part in enumerate(parts))
     # Remove unsafe link destinations while preserving the visible label.
-    cleaned = re.sub(r"\\[([^]\\n]+)\\]\\((?:javascript|data):[^)]*\\)", r"\\1", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\[([^\]\n]+)\]\((?:javascript|data):[^)]*\)", r"\1", cleaned, flags=re.IGNORECASE)
     return cleaned
 
 
