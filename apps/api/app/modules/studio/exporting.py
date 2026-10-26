@@ -44,8 +44,11 @@ def _source_id(value):
 def sanitize_markdown(content):
     """Keep literal commands intact inside fenced/inline code; strip executable HTML."""
     parts = re.split(r"(```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]+`)", content)
-    return "".join(part if index % 2 else bleach.clean(part, tags=[], strip=True)
+    cleaned = "".join(part if index % 2 else bleach.clean(part, tags=[], strip=True)
                    for index, part in enumerate(parts))
+    # Remove unsafe link destinations while preserving the visible label.
+    cleaned = re.sub(r"\\[([^]\\n]+)\\]\\((?:javascript|data):[^)]*\\)", r"\\1", cleaned, flags=re.IGNORECASE)
+    return cleaned
 
 
 def markdown_text(snapshot, images=None):
