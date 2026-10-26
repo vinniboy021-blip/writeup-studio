@@ -75,7 +75,7 @@ def generate(production: bool, origin: str) -> dict[str, str]:
         "KALI_ENABLED": "false", "KALI_MCP_URL": "http://kali-mcp:8080/mcp",
         "KALI_MCP_TOKEN": secrets.token_hex(32), "KALI_TIMEOUT_SECONDS": "30",
         "KALI_ALLOWED_TOOLS": "system_info,artifact_hash,artifact_file,artifact_strings,artifact_json_summary",
-        "METRICS_ENABLED": "true", "METRICS_TOKEN": "", "LOG_LEVEL": "INFO",
+        "METRICS_ENABLED": "true", "METRICS_TOKEN": secrets.token_hex(32), "LOG_LEVEL": "INFO",
         "GRAFANA_ADMIN_USER": "admin", "GRAFANA_ADMIN_PASSWORD": secrets.token_hex(32),
         "GRAFANA_PORT": "3001", "BACKUP_UID": str(os.getuid()), "BACKUP_GID": str(os.getgid()),
         "BACKUP_RETENTION_DAYS": "30", "RPO_TARGET_HOURS": "24", "RTO_TARGET_HOURS": "4",
