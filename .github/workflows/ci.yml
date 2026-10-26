@@ -32,7 +32,7 @@ jobs:
           cache-dependency-path: apps/api/pyproject.toml
       - name: Install API and development tools
         working-directory: apps/api
-        run: python -m pip install --upgrade pip && pip install '.[dev]'
+        run: python -m pip install --upgrade pip uv && uv pip install --system --require-hashes -r requirements.lock && pip install --no-deps -e .
       - name: Validate Python
         run: |
           python -m compileall apps/api/app
