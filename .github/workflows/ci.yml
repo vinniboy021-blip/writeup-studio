@@ -69,7 +69,7 @@ jobs:
           cache-dependency-path: apps/web/package-lock.json
       - name: Install frontend
         working-directory: apps/web
-        run: npm install --package-lock-only && npm ci
+        run: npm ci
       - name: Validate frontend
         working-directory: apps/web
         run: |
