@@ -1,4 +1,8 @@
 name: CI
+
+permissions:
+  contents: read
+
 on:
   push:
   pull_request:
@@ -65,7 +69,7 @@ jobs:
           cache-dependency-path: apps/web/package-lock.json
       - name: Install frontend
         working-directory: apps/web
-        run: npm install --package-lock-only && npm install
+        run: npm ci
       - name: Validate frontend
         working-directory: apps/web
         run: |
