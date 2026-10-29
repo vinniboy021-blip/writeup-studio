@@ -99,5 +99,5 @@ jobs:
         env:
           ENVIRONMENT: test
           DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5433/ctf_backup
-        run: pytest tests/infra/test_backups.py -q
+        run: pytest ../../tests/infra/test_backups.py -q
         working-directory: apps/api
