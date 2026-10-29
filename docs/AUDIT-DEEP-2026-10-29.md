@@ -35,11 +35,11 @@ O commit auditado aparece com `verification.verified=false` e razão `unsigned`.
 
 Ação: exigir commits assinados por SSH/GPG/Sigstore e configurar regra de repositório para commits verificados.
 
-### A4 — Instalação frontend não reprodutível no CI (resolvido, confirmado)
+### A4 — Lockfile frontend divergente (alto, aberto)
 
 O workflow usa `npm install --package-lock-only && npm install`, em vez de `npm ci`. Isso recalcula o lock no runner e permite que o resultado dependa do estado atual do registry. O lockfile existe e contém integridades, mas a validação não garante instalação byte a byte reproduzível.
 
-Ação concluída: lockfile sincronizado e CI alterado para `npm ci`. Continua recomendada a auditoria de vulnerabilidades.
+Ação temporária aplicada no CI: reconciliação seguida de `npm ci`. Ação definitiva: gerar e versionar o lockfile corrigido; não aceitar reconciliação automática em release.
 
 ### A5 — Pyright removido do gate (médio, confirmado)
 
