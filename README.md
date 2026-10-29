@@ -1,43 +1,40 @@
 # CTF Writeup Studio
 
-Workspace open source para organizar competições e desafios de CTF, produzir writeups versionados, preservar evidências e colaborar em relatórios técnicos. Backend FastAPI, frontend Next.js, PostgreSQL, Redis/RQ e armazenamento S3/MinIO privado. A IA e o Kali MCP são opcionais: o fluxo de documentação funciona sem credenciais comerciais.
+Plataforma open source para organizar CTFs, preservar evidências e produzir writeups técnicos auditáveis. Código próprio sob licença MIT.
 
-## Instalar
+## Stack
 
-O repositório fornece configuração local e de produção. Use o script de preparação descrito em [docs/INSTALLATION.md](docs/INSTALLATION.md) para gerar o arquivo de ambiente com segredos aleatórios. As configurações de exemplo não devem ser usadas como credenciais de produção.
+Next.js/TypeScript, FastAPI/Python, PostgreSQL, Redis/RQ, MinIO/S3, Nginx e Docker Compose. IA Ollama e Kali MCP são opcionais.
 
-```sh
-python scripts/setup.py
-docker compose up --build
-```
+## Início rápido
 
-A interface e a API são servidas pelo proxy na mesma origem. Para desenvolvimento sem Docker, execute migrations antes de iniciar a API e configure o endereço interno do backend no frontend, conforme o guia de instalação.
+    python scripts/setup.py
+    docker compose up -d --build
+
+Acesse http://localhost:8080. API em /api/v1 e OpenAPI em /docs no desenvolvimento.
 
 ## Recursos
 
-- Sessões HttpOnly, senhas Argon2id, CSRF e papéis por equipe verificados no backend.
-- Competições, desafios, categorias, responsáveis, templates versionados e pesquisa paginada.
-- Documento canônico v1 com seções editáveis, autosave, revisões, comparação e restauração. Atualizações usam comparação atômica de versão; um conflito retorna HTTP 409.
-- Upload com tamanho limitado, MIME real, SHA-256, metadados e horário de captura declarado separado do recebimento. Downloads e thumbnails exigem autorização.
-- Anotações editáveis e imagens derivadas separadas do original; timeline das alterações.
-- Comentários, convites, notificações, revisão por outro usuário e publicação de snapshots autorizados.
-- Exportação Markdown, HTML, JSON e PDF offline, com índice, tabelas, código e evidências incluídas por opção explícita.
-- Jobs RQ com estados e cancelamento; assistência opcional via Ollama e provedor externo configurado com consentimento explícito.
-- Bridge Kali MCP para operações de coleta sobre evidências autorizadas, sem shell arbitrário, com resultado armazenado como nova evidência.
+- Competições, desafios, equipes, papéis e RBAC no backend.
+- Writeups com Markdown/rich text, autosave, versões, diff e restauração.
+- Evidências com MIME real, SHA-256, versões, anotações e timeline.
+- Exportação Markdown, HTML, PDF e JSON.
+- Revisão independente, publicação por snapshot e proteção de conteúdo privado.
+- IA opcional com proveniência e revisão humana.
+- Kali MCP autenticado para coleta tipada de artefatos.
+- Observabilidade, backup, restore e CI com PostgreSQL/Redis.
 
-## Documentação e validação
+## Verificação
 
-Consulte [docs/INDEX.md](docs/INDEX.md). [docs/VALIDATION.md](docs/VALIDATION.md) registra os testes realmente executados e os limites de verificação do ambiente; presença de Dockerfiles ou testes no código não comprova implantação.
+    cd apps/api && pip install -e '.[dev]' && pytest --cov=app --cov-fail-under=80
+    cd apps/web && npm ci && npm run typecheck && npm run lint && npm test -- --run && npm run build
 
-```sh
-cd apps/api
-pip install -e '.[dev]'
-pytest
-ruff check app tests
-```
+Consulte docs/INDEX.md, docs/VALIDATION.md e docs/AUDIT-DEEP-2026-10-29.md.
 
-O frontend tem comandos próprios de type checking, testes, lint e build em `apps/web/package.json`. A CI valida os fluxos com serviços PostgreSQL/Redis e mantém as integrações opcionais isoladas dos testes essenciais.
+## Produção
+
+Siga docs/INSTALLATION.md, use docker-compose.prod.yml, TLS válido, serviços privados e secret manager. O pipeline oficial exige API, Web e Backup verdes.
 
 ## Licença
 
-O código próprio é [MIT](LICENSE). PostgreSQL, Redis, MinIO, Kali e demais dependências mantêm suas licenças próprias. Evidências e documentos enviados por usuários não são relicenciados pelo software. Leia [CONTRIBUTING.md](CONTRIBUTING.md) e [SECURITY.md](SECURITY.md).
+MIT. Conteúdo e evidências enviados pertencem aos autores.
