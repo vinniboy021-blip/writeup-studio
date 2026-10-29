@@ -35,11 +35,11 @@ O commit auditado aparece com `verification.verified=false` e razão `unsigned`.
 
 Ação: exigir commits assinados por SSH/GPG/Sigstore e configurar regra de repositório para commits verificados.
 
-### A4 — Lockfile frontend divergente (alto, aberto)
+### A4 — Lockfile frontend divergente (resolvido, confirmado)
 
 O workflow usa `npm install --package-lock-only && npm install`, em vez de `npm ci`. Isso recalcula o lock no runner e permite que o resultado dependa do estado atual do registry. O lockfile existe e contém integridades, mas a validação não garante instalação byte a byte reproduzível.
 
-Ação temporária aplicada no CI: reconciliação seguida de `npm ci`. Ação definitiva: gerar e versionar o lockfile corrigido; não aceitar reconciliação automática em release.
+Ação concluída: lockfile regenerado, versionado e validado por `npm ci`.
 
 ### A5 — Pyright removido do gate (médio, confirmado)
 
@@ -98,7 +98,7 @@ Ação: documentar procedimento operacional executado, rotação, RPO/RTO medido
 
 ## Atualização pós-correções
 
-O pipeline 31 está verde para API, Web e Backup. A instalação frontend agora usa `npm ci`, e o workflow possui permissões mínimas de leitura. Permanecem como bloqueios de governança a proteção da branch, commits assinados, scans de dependências, Playwright E2E e a redução do débito Pyright.
+O pipeline final está verde para API, Web e Backup. O lockfile está sincronizado, a instalação usa `npm ci` e o workflow possui permissões mínimas de leitura. Permanecem como bloqueios de governança a proteção da branch, commits assinados, scans de dependências, Playwright E2E e a redução do débito Pyright.
 
 ## Conclusão
 
