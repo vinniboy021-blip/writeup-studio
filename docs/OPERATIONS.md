@@ -1,18 +1,17 @@
 # Operação
 
-## Saúde e observabilidade
+## Saúde
 
-- `/api/v1/health` confirma que o processo responde.
-- `/api/v1/ready` valida banco e armazenamento configurado.
-- `/api/v1/metrics` deve ficar em rede interna; em produção o Nginx a bloqueia.
-- Logs possuem JSON, request ID e latência, sem conteúdo de evidências.
+/api/v1/health confirma processo. /api/v1/ready valida banco, Redis e storage. /api/v1/metrics é somente interno e autenticado; produção bloqueia docs, métricas e readiness no Nginx público.
 
 ## Backup e restore
 
-Execute `python scripts/backup.py backup --output backups`, depois `verify` e um restore em banco descartável. Preserve o manifesto SHA-256 e registre a duração. Nunca use `--replace-objects` sem confirmar o bucket/diretório de destino. O restore exige `--confirm-replace` igual ao nome do banco.
+    python scripts/backup.py backup --output backups
+    python scripts/backup.py verify --input backups/backup-...
+    python scripts/backup.py restore --input backups/backup-... --database-url ... --confirm-replace NOME
 
-RPO/RTO são metas configuráveis, não garantias. Faça um teste de restauração pelo menos mensalmente e antes de uma migração importante.
+Backups incluem dump PostgreSQL, objetos e manifesto SHA-256. Restaure em banco descartável, verifique hashes e registre duração. RPO/RTO são metas, não garantias sem medição.
 
 ## Produção
 
-Use somente `.env.production` com permissões 0600, HTTPS válido e PostgreSQL/Redis privados. Não exponha API, banco, Redis, MinIO, Grafana ou MCP diretamente à internet. Rotacione tokens e segredos após qualquer suspeita de exposição.
+Use TLS válido, PostgreSQL/Redis/MinIO privados, secrets fora do Git, rotação após exposição e retenção documentada. Não exponha serviços internos diretamente. Preserve request ID e hash de evidências em incidentes; não altere originais.
