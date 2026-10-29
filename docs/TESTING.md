@@ -1,29 +1,24 @@
 # Testes e validação
 
-A validação local reproduz a pipeline:
+Backend:
 
-```sh
-cd apps/api
-python -m pip install -e '.[dev]'
-ruff check app tests
-pyright
-pytest --cov=app --cov-report=term-missing --cov-fail-under=80
-```
+    cd apps/api
+    python -m compileall app
+    ruff check app tests
+    pytest --cov=app --cov-report=term-missing --cov-fail-under=80
 
-A suíte de integração usa `TEST_DATABASE_URL` para PostgreSQL e `TEST_REDIS_URL` para Redis. Sem essas variáveis, os testes marcados para infraestrutura são pulados; isso não deve ser interpretado como validação de produção.
+O CI usa PostgreSQL 16 e Redis 7 reais, aplica Alembic e executa a suíte completa. Pyright está disponível para auditoria local; o débito de tipagem deve ser reduzido até voltar ao gate obrigatório.
 
 Frontend:
 
-```sh
-cd apps/web
-npm ci
-npm run typecheck
-npm run lint
-npm test -- --run
-npm run build
-npm run test:e2e
-```
+    cd apps/web
+    npm ci
+    npm run typecheck
+    npm run lint
+    npm test -- --run
+    npm run build
+    npm run test:e2e
 
-O CI executa PostgreSQL/Redis reais, migrations, cobertura mínima de 80%, Ruff, Pyright, build e testes frontend. Docker Compose e Ollama/Kali precisam de um ensaio separado porque dependem do runtime de containers e dos serviços opcionais.
+O lockfile deve estar sincronizado: npm ci é o comando oficial. Antes de release, execute Docker Compose, backup, restore em banco descartável e verificação de hashes.
 
-Cada relatório de release deve registrar o comando, o ambiente, a saída e os testes pulados. Não declare uma validação que não foi executada.
+Critérios de release: API, Web e Backup verdes; migrations aplicadas; cobertura crítica acima de 80%; dependências e imagens escaneadas; documentação e changelog atualizados.
