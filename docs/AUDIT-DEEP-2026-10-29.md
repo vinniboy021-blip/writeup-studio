@@ -7,7 +7,7 @@ Repositório: https://github.com/vinniboy021-blip/writeup-studio
 
 Foram revisados o histórico e a árvore completa do repositório, configuração FastAPI/Pydantic, autenticação/RBAC/CSRF, armazenamento local/S3, integração Kali MCP, exportadores, migrations, Docker Compose, Nginx, workflows GitHub Actions, scripts de backup, lockfiles, documentação e resultados reais dos workflows 28–30.
 
-O workflow 30 executou com sucesso nos jobs API e Web. O job Backup falhou por erro de caminho: o workflow executa a partir de `apps/api`, mas referencia `tests/infra/test_backups.py`; a correção foi publicada depois no commit `7e947883956f803b8e706dbfaec9e5bdeea83666` e ainda requer uma nova execução para evidência de sucesso.
+O workflow 30 executou com sucesso nos jobs API e Web. O job Backup falhou por erro de caminho e foi corrigido no commit `7e947883956f803b8e706dbfaec9e5bdeea83666`; o workflow 31 confirmou API, Web e Backup verdes. Depois, o commit `e65153727d06b41498b9008c1069b163ec4ce5fb` tornou a instalação frontend reprodutível com `npm ci`.
 
 ## Resultado executivo
 
@@ -17,9 +17,9 @@ A ferramenta ainda não deve ser declarada pronta para produção sem fechar os 
 
 ## Achados críticos e altos
 
-### A1 — CI global ainda vermelho (alto, confirmado)
+### A1 — CI global anteriormente vermelho (resolvido, confirmado)
 
-O workflow 30 falhou no job Backup. A causa foi confirmada nos logs: `ERROR: file or directory not found: tests/infra/test_backups.py`. O workflow foi corrigido para `../../tests/infra/test_backups.py` no commit `7e947883...`, mas não há ainda uma execução posterior bem-sucedida registrada. Enquanto isso, backup/restore não é validado automaticamente.
+O workflow 30 falhou no job Backup. A causa foi confirmada nos logs: `ERROR: file or directory not found: tests/infra/test_backups.py`. O workflow foi corrigido para `../../tests/infra/test_backups.py` no commit `7e947883...`, mas não há ainda uma execução posterior bem-sucedida registrada. O workflow 31 confirmou a execução do teste de backup; manter esse job obrigatório.
 
 Ação: executar o workflow novamente e exigir que API, Web e Backup sejam verdes antes de release.
 
@@ -35,11 +35,11 @@ O commit auditado aparece com `verification.verified=false` e razão `unsigned`.
 
 Ação: exigir commits assinados por SSH/GPG/Sigstore e configurar regra de repositório para commits verificados.
 
-### A4 — Instalação frontend não reprodutível no CI (alto, confirmado)
+### A4 — Instalação frontend não reprodutível no CI (resolvido, confirmado)
 
 O workflow usa `npm install --package-lock-only && npm install`, em vez de `npm ci`. Isso recalcula o lock no runner e permite que o resultado dependa do estado atual do registry. O lockfile existe e contém integridades, mas a validação não garante instalação byte a byte reproduzível.
 
-Ação: sincronizar definitivamente `package-lock.json` com `package.json` e voltar para `npm ci`; adicionar auditoria de dependências.
+Ação concluída: lockfile sincronizado e CI alterado para `npm ci`. Continua recomendada a auditoria de vulnerabilidades.
 
 ### A5 — Pyright removido do gate (médio, confirmado)
 
@@ -95,6 +95,10 @@ Ação: documentar procedimento operacional executado, rotação, RPO/RTO medido
 - Migrations Alembic e lockfile Python com hashes existem.
 - Suíte API executada: 117 aprovados, cobertura total 85,93%.
 - Frontend executou typecheck, lint, Vitest e build com sucesso no workflow 30.
+
+## Atualização pós-correções
+
+O pipeline 31 está verde para API, Web e Backup. A instalação frontend agora usa `npm ci`, e o workflow possui permissões mínimas de leitura. Permanecem como bloqueios de governança a proteção da branch, commits assinados, scans de dependências, Playwright E2E e a redução do débito Pyright.
 
 ## Conclusão
 
