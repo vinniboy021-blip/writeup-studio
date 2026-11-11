@@ -98,6 +98,8 @@ class Settings(BaseSettings):
                 raise ValueError("QUEUE_EAGER não pode ser habilitado em produção")
             if not self.queue_enabled:
                 raise ValueError("QUEUE_ENABLED=true é obrigatório em produção")
+            if self.metrics_enabled and len(self.metrics_token) < 16:
+                raise ValueError("METRICS_TOKEN com pelo menos 16 caracteres é obrigatório em produção quando métricas estão habilitadas")
         if self.queue_enabled or self.rate_limit_backend == "redis":
             if not self.redis_url.startswith(("redis://", "rediss://")):
                 raise ValueError("REDIS_URL inválida")
