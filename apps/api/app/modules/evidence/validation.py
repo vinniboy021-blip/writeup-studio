@@ -33,10 +33,11 @@ def validate_image(source: BinaryIO) -> tuple[str, dict]:
         with warnings.catch_warnings():
             warnings.simplefilter("error", Image.DecompressionBombWarning)
             with Image.open(source) as image:
-                mime = FORMATS.get(image.format)
+                mime = FORMATS.get(image.format or "")
                 if not mime:
                     raise ValueError("Formato de imagem não permitido")
-                if image.width * image.height > Image.MAX_IMAGE_PIXELS:
+                max_pixels: int = Image.MAX_IMAGE_PIXELS or 24_000_000
+                if image.width * image.height > max_pixels:
                     raise ValueError("Imagem excede limite de 24 megapixels")
                 metadata = {"width": image.width, "height": image.height,
                             "frames": getattr(image, "n_frames", 1)}
@@ -148,7 +149,8 @@ def validate_file(source: BinaryIO, filename: str, declared_mime: str | None) ->
                "application/x-pcap": "application/vnd.tcpdump.pcap", "text/json": "application/json"}
     if aliases.get(declared, declared) not in {expected, "application/octet-stream"}:
         raise HTTPException(422, "MIME declarado não corresponde ao conteúdo validado")
-    metadata["detected_mime"] = detected
+    metadata_out: dict[str, object] = dict(metadata)
+    metadata_out["detected_mime"] = detected
     if expected == "image/gif":
-        metadata["preview_policy"] = "static_first_frame"
-    return expected, extension, metadata
+        metadata_out["preview_policy"] = "static_first_frame"
+    return expected, extension, metadata_out

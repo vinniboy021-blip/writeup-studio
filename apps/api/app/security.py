@@ -49,12 +49,12 @@ def rate_limit(key: str, limit: int, window: int) -> None:
 
         try:
             client = redis.Redis.from_url(settings.redis_url, socket_timeout=2, socket_connect_timeout=2)
-            count = client.eval(
+            count = int(client.eval(  # type: ignore[no-untyped-call]
                 "local n=redis.call('INCR',KEYS[1]); if n==1 then redis.call('EXPIRE',KEYS[1],ARGV[1]) end; return n",
                 1,
                 safe_key,
-                window,
-            )
+                str(window),
+            ))
         except redis.RedisError as exc:
             raise HTTPException(503, "Proteção de autenticação temporariamente indisponível") from exc
         if count > limit:
