@@ -139,7 +139,7 @@ def execute(name: str, arguments: dict):
             raise ValueError("Artefato excedeu o limite")
         if name == "artifact_json_summary":
             value = json.loads(artifact)
-            summary = {"type": type(value).__name__}
+            summary: dict[str, object] = {"type": type(value).__name__}
             if isinstance(value, dict):
                 summary.update(keys=list(value.keys())[:100], item_count=len(value))
             elif isinstance(value, list):
@@ -214,7 +214,7 @@ async def mcp(request: Request):
             # Small bounded fixed operations; worker thread avoids blocking MCP protocol loop.
             import anyio
 
-            result = await anyio.to_thread.run_sync(execute, params.get("name"), params.get("arguments", {}))
+            result = await anyio.to_thread.run_sync(execute, params.get("name", ""), params.get("arguments", {}))  # type: ignore[attr-defined]
         except (ValueError, UnicodeError, OSError, subprocess.TimeoutExpired, RecursionError):
             result = {
                 "content": [{"type": "text", "text": "Artefato inválido ou ferramenta indisponível"}],

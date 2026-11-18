@@ -26,8 +26,11 @@ def main():
             parser.error("Usuário já existe; promoção deve ser feita por um administrador autenticado")
         if args.command != "create-admin" and user is None:
             parser.error("Usuário não encontrado")
+        active_user: User
         if args.command == "disable-user":
+            assert user is not None
             user.is_active = False
+            active_user = user
         else:
             secret = (
                 sys.stdin.readline().rstrip("\r\n")
@@ -37,15 +40,17 @@ def main():
             if not 12 <= len(secret) <= 128:
                 parser.error("Senha deve ter de 12 a 128 caracteres")
             if args.command == "create-admin":
-                user = User(
+                active_user = User(
                     email=email, name=args.name, is_admin=True, is_active=True, password_hash=password_hash.hash(secret)
                 )
-                db.add(user)
+                db.add(active_user)
                 db.flush()
             else:
+                assert user is not None
                 user.password_hash = password_hash.hash(secret)
-        db.execute(update(SessionModel).where(SessionModel.user_id == user.id).values(revoked_at=utcnow()))
-        audit(db, user, "admin.cli." + args.command, "user", user.id, {"via": "local-cli"})
+                active_user = user
+        db.execute(update(SessionModel).where(SessionModel.user_id == active_user.id).values(revoked_at=utcnow()))
+        audit(db, active_user, "admin.cli." + args.command, "user", active_user.id, {"via": "local-cli"})
         db.commit()
     print("Operação concluída. Nenhuma senha foi registrada.")
 

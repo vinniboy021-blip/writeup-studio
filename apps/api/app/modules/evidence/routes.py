@@ -104,7 +104,7 @@ def delete_evidence(evidence_id: str, db: DB, actor: Writer, expected_version: i
                                                Evidence.deleted_at.is_(None))
                         .values(deleted_at=utcnow(), updated_at=utcnow(), version=version + 1)
                         .execution_options(synchronize_session=False))
-    if result.rowcount != 1:
+    if result.rowcount != 1:  # type: ignore[union-attr]
         conflict(db, evidence.id)
     event(db, actor, evidence, "deleted", {"retention_days": settings.retention_days})
     audit(db, actor, "evidence.delete", "evidence", evidence.id)

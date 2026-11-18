@@ -111,7 +111,7 @@ def create_evidence(db: Session, actor: User, source: BinaryIO, filename: str, d
             sha.update(chunk)
             spool.write(chunk)
         spool.seek(0)
-        mime, extension, detected_metadata = validate_file(spool, filename, declared_mime)
+        mime, extension, detected_metadata = validate_file(spool, filename, declared_mime)  # type: ignore[arg-type]
         evidence_id = str(uuid.uuid4())
         original_key = f"evidences/{evidence_id}/original/{uuid.uuid4().hex}{extension}"
         now = utcnow()
@@ -121,7 +121,7 @@ def create_evidence(db: Session, actor: User, source: BinaryIO, filename: str, d
                             storage_key=original_key, version=1, tags=tags, metadata_json={**(metadata or {}), **detected_metadata},
                             visibility=visibility, created_at=now, updated_at=now)
         try:
-            put_object(original_key, spool, mime)
+            put_object(original_key, spool, mime)  # type: ignore[arg-type]
             keys.append(original_key)
             db.add(evidence)
             db.flush()
@@ -193,7 +193,7 @@ def update_metadata(db: Session, actor: User, evidence: Evidence, patch: Evidenc
                                                Evidence.version == patch.expected_version,
                                                Evidence.deleted_at.is_(None)).values(**values)
                         .execution_options(synchronize_session=False))
-    if result.rowcount != 1:
+    if result.rowcount != 1:  # type: ignore[union-attr]
         conflict(db, evidence.id)
     event(db, actor, evidence, "metadata_updated", {"fields": list(values), "version": patch.expected_version + 1})
     audit(db, actor, "evidence.metadata", "evidence", evidence.id, {"fields": list(values)})
@@ -221,7 +221,7 @@ def annotate(db: Session, actor: User, evidence: Evidence, data: AnnotationCreat
                                                Evidence.deleted_at.is_(None))
                         .values(version=data.expected_version + 1, updated_at=utcnow())
                         .execution_options(synchronize_session=False))
-    if result.rowcount != 1:
+    if result.rowcount != 1:  # type: ignore[union-attr]
         conflict(db, evidence.id)
     version = data.expected_version + 1
     key = f"evidences/{evidence.id}/derived/{uuid.uuid4().hex}.png"

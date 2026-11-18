@@ -47,6 +47,8 @@ def create_writeup(data: WriteupCreate, db: DB, actor: Mutator):
     validate_team(db, actor, data.team_id, data.visibility)
     if data.challenge_id:
         challenge = db.get(Challenge, data.challenge_id)
+        if challenge is None:
+            raise HTTPException(404, "Desafio não encontrado")
         authorize(db, actor, challenge, "read")
         if data.visibility == "team" and (challenge.visibility != "team" or challenge.team_id != data.team_id):
             raise HTTPException(422, "Desafio deve pertencer à mesma equipe do writeup")
@@ -57,6 +59,8 @@ def create_writeup(data: WriteupCreate, db: DB, actor: Mutator):
         if data.document is not None:
             raise HTTPException(422, "Escolha document ou template_id")
         template = db.get(WriteupTemplate, data.template_id)
+        if template is None:
+            raise HTTPException(404, "Template não encontrado")
         authorize(db, actor, template, "read")
         document = template.document
     row = Writeup(owner_id=actor.id, team_id=data.team_id, challenge_id=data.challenge_id,
@@ -95,7 +99,7 @@ def delete_writeup(writeup_id: str, db: DB, actor: Mutator, expected_version: in
     result = db.execute(update(Writeup).where(Writeup.id == row.id, Writeup.version == expected_version,
         Writeup.deleted_at.is_(None)).values(deleted_at=utcnow(), approved_revision=None,
         version=expected_version + 1).execution_options(synchronize_session=False))
-    if result.rowcount != 1:
+    if result.rowcount != 1:  # type: ignore[union-attr]
         db.rollback(); raise HTTPException(409, "Writeup alterado; atualize antes de excluir")
     db.execute(update(Publication).where(Publication.writeup_id == row.id).values(expires_at=utcnow()))
     audit(db, actor, "writeup.deleted", "writeup", row.id)
@@ -151,6 +155,8 @@ def writeup_evidences(writeup_id: str, db: DB, actor: Actor):
 def link_evidence(writeup_id: str, data: EvidenceLink, db: DB, actor: Mutator):
     row = get_writeup(db, actor, writeup_id, "write")
     evidence = db.get(Evidence, data.evidence_id)
+    if evidence is None:
+        raise HTTPException(404, "Evidência não encontrada")
     compatible_scope(db, actor, row, evidence)
     if data.section_id and data.section_id not in {section["id"] for section in row.document["sections"]}:
         raise HTTPException(422, "Seção não encontrada no documento")
@@ -165,7 +171,7 @@ def link_evidence(writeup_id: str, data: EvidenceLink, db: DB, actor: Mutator):
                          details={"writeup_id": row.id, "section_id": data.section_id}))
     saved = save_revision(db, actor, row, row.version, {}, "Associação de evidência")
     return {"id": relation.id, "evidence_id": evidence.id, "section_id": relation.section_id,
-            "position": relation.position, "writeup_version": saved.version}
+            "position": relation.position, "writeup_version": saved.version}  # type: ignore[union-attr]
 
 
 @router.delete("/writeups/{writeup_id}/evidences/{evidence_id}")
@@ -179,7 +185,7 @@ def unlink_evidence(writeup_id: str, evidence_id: str, db: DB, actor: Mutator):
     db.add(EvidenceEvent(evidence_id=evidence_id, actor_id=actor.id, event_type="association_removed",
                          details={"writeup_id": row.id}))
     saved = save_revision(db, actor, row, row.version, {}, "Remoção de evidência")
-    return {"ok": True, "writeup_version": saved.version}
+    return {"ok": True, "writeup_version": saved.version}  # type: ignore[union-attr]
 
 
 def export_out(row):
@@ -230,7 +236,7 @@ def export_download(export_id: str, db: DB, actor: Actor):
     for manifest in row.options["snapshot"].get("evidences", []):
         evidence = db.get(Evidence, manifest["id"])
         authorize(db, actor, evidence, "read")
-        if row.options.get("include_originals") and evidence.owner_id != actor.id and not actor.is_admin:
+        if evidence is not None and row.options.get("include_originals") and evidence.owner_id != actor.id and not actor.is_admin:
             raise HTTPException(403, "Originais não autorizados")
     return object_response(row.storage_key, row.options["mime_type"], row.options["filename"])
 
@@ -252,13 +258,15 @@ def publish(writeup_id: str, data: PublishInput, db: DB, actor: Mutator):
     return result
 
 
-def get_publication(db, publication_id, public=False, actor=None):
+def get_publication(db, publication_id, public=False, actor: User | None = None):
     row = db.get(Publication, publication_id)
     if not row or (row.expires_at and row.expires_at <= utcnow()):
         raise HTTPException(404, "Publicação indisponível")
     if public and row.visibility != "public":
         raise HTTPException(404, "Publicação indisponível")
     if not public:
+        if actor is None:
+            raise HTTPException(401, "Autenticação necessária")
         authorize(db, actor, row, "read")
     return row
 

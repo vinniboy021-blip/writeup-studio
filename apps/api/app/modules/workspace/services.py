@@ -949,11 +949,11 @@ def search(
         title_column = model.title if model is m.Writeup else model.name
         text_parts = [func.coalesce(title_column, "")]
         if hasattr(model, "description"):
-            text_parts.append(func.coalesce(model.description, ""))
+            text_parts.append(func.coalesce(getattr(model, "description"), ""))
         if model is m.Writeup:
             text_parts.append(func.coalesce(cast(model.document, String), ""))
         if hasattr(model, "notes"):
-            text_parts.append(func.coalesce(model.notes, ""))
+            text_parts.append(func.coalesce(getattr(model, "notes"), ""))
         searchable = text_parts[0]
         for part in text_parts[1:]:
             searchable = searchable + " " + part

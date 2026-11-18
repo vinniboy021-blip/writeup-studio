@@ -65,6 +65,8 @@ def execute_export(record_id):
         if not _claim(db, Export, record_id):
             return
         row = db.get(Export, record_id)
+        if row is None:
+            return
         try:
             actor = _actor(db, row.requested_by)
             document = db.get(Writeup, row.writeup_id)
@@ -73,7 +75,7 @@ def execute_export(record_id):
             for manifest in snapshot.get("evidences", []):
                 evidence = db.get(Evidence, manifest["id"])
                 authorize(db, actor, evidence, "read")
-                if row.options.get("include_originals") and evidence.owner_id != actor.id and not actor.is_admin:
+                if evidence is not None and row.options.get("include_originals") and evidence.owner_id != actor.id and not actor.is_admin:
                     raise ValueError("Exportação de originais não está mais autorizada")
             data, mime, filename = export_document(snapshot, row.options)
             if len(data) > settings.max_export_bytes:
@@ -94,11 +96,12 @@ def execute_export(record_id):
         except Exception as exc:
             logger.error("export_failed", extra={"job_id": record_id, "exception_type": type(exc).__name__})
             db.rollback()
-            row = db.get(Export, record_id)
-            row.status = "cancelled" if row.cancel_requested else "failed"
-            row.error = "Falha ao gerar exportação; consulte os logs pelo ID do job"
-            row.updated_at = utcnow()
-            db.commit()
+            failed_row = db.get(Export, record_id)
+            if failed_row is not None:
+                failed_row.status = "cancelled" if failed_row.cancel_requested else "failed"
+                failed_row.error = "Falha ao gerar exportação; consulte os logs pelo ID do job"
+                failed_row.updated_at = utcnow()
+                db.commit()
 
 
 def execute_ai(record_id):
@@ -106,6 +109,8 @@ def execute_ai(record_id):
         if not _claim(db, AIJob, record_id):
             return
         row = db.get(AIJob, record_id)
+        if row is None:
+            return
         try:
             if not settings.ai_enabled:
                 raise ValueError("IA desabilitada")
@@ -131,11 +136,12 @@ def execute_ai(record_id):
         except Exception as exc:
             logger.error("ai_failed", extra={"job_id": record_id, "exception_type": type(exc).__name__})
             db.rollback()
-            row = db.get(AIJob, record_id)
-            row.status = "cancelled" if row.cancel_requested else "failed"
-            row.error = "Falha no provedor de IA; consulte os logs pelo ID do job"
-            row.updated_at = utcnow()
-            db.commit()
+            failed_row = db.get(AIJob, record_id)
+            if failed_row is not None:
+                failed_row.status = "cancelled" if failed_row.cancel_requested else "failed"
+                failed_row.error = "Falha no provedor de IA; consulte os logs pelo ID do job"
+                failed_row.updated_at = utcnow()
+                db.commit()
 
 
 def cancel_job(db, row, kind):

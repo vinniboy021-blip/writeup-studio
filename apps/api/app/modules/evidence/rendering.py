@@ -48,7 +48,7 @@ def render_annotation(original: bytes, annotations: AnnotationData) -> bytes:
         elif shape.type == "circle":
             draw.ellipse(box, outline=color, width=width)
         elif shape.type in {"line", "arrow"}:
-            end = (round(shape.x2), round(shape.y2))
+            end = (round(shape.x2 or 0.0), round(shape.y2 or 0.0))
             draw.line((x, y, *end), fill=color, width=width)
             if shape.type == "arrow":
                 angle = math.atan2(end[1] - y, end[0] - x)
@@ -57,7 +57,7 @@ def render_annotation(original: bytes, annotations: AnnotationData) -> bytes:
                 right = (end[0] - length * math.cos(angle + math.pi / 6), end[1] - length * math.sin(angle + math.pi / 6))
                 draw.polygon((end, left, right), fill=color)
         elif shape.type == "text":
-            draw.text((x, y), shape.text, fill=color, font=_font(max(12, width * 5)))
+            draw.text((x, y), shape.text or "", fill=color, font=_font(max(12, width * 5)))
         elif shape.type == "step":
             radius = 14
             draw.ellipse((max(0, x - radius), max(0, y - radius), x + radius, y + radius), fill=color)

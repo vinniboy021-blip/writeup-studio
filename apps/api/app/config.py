@@ -1,7 +1,7 @@
 """Validated runtime settings. No infrastructure is created on import."""
 
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Self
 from urllib.parse import urlsplit
 
 from pydantic import Field, model_validator
@@ -76,7 +76,7 @@ class Settings(BaseSettings):
         return self.upload_dir
 
     @model_validator(mode="after")
-    def validate_runtime(self):
+    def validate_runtime(self) -> Self:
         for origin in self.allowed_origins:
             parsed = urlsplit(origin)
             if parsed.scheme not in {"http", "https"} or not parsed.netloc or parsed.path or parsed.query:
@@ -117,4 +117,4 @@ class Settings(BaseSettings):
         return self
 
 
-settings = Settings()
+settings = Settings()  # type: ignore[call-arg]

@@ -42,11 +42,9 @@ jobs:
         run: |
           python -m compileall app
           ruff check app --ignore E702,F401
-      - name: Typecheck critical security modules
+      - name: Typecheck all API modules
         working-directory: apps/api
-        run: |
-          # Scope expands per module as typing debt is cleared (see docs/AUDIT-DEEP-2026-10-29.md A5)
-          pyright app/security.py app/modules/identity/services.py app/modules/identity/routes.py app/modules/evidence/validation.py
+        run: pyright app/
       - name: Audit Python dependencies
         working-directory: apps/api
         run: pip-audit -r requirements.lock --progress-spinner off
