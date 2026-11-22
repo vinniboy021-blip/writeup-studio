@@ -9,9 +9,8 @@ cd apps/api
 python -m compileall app
 ruff check app tests --ignore E702,F401
 
-# Typecheck nos módulos críticos de segurança
-pyright app/security.py app/modules/identity/services.py \
-         app/modules/identity/routes.py app/modules/evidence/validation.py
+# Typecheck em toda a app/ (zero erros obrigatório)
+pyright app/
 
 # Auditoria de dependências
 pip-audit -r requirements.lock --progress-spinner off

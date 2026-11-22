@@ -13,13 +13,15 @@
 ```bash
 # Backend
 cd apps/api
-ruff check app tests
-pyright app/security.py app/modules/identity/services.py \
-         app/modules/identity/routes.py app/modules/evidence/validation.py
+python -m compileall app
+ruff check app tests --ignore E702,F401
+pyright app/                         # zero erros obrigatório
+pip-audit -r requirements.lock --progress-spinner off
 pytest --cov=app --cov-fail-under=80
 
 # Frontend
 cd apps/web
+npm audit --audit-level=high
 npm run typecheck && npm run lint && npm test -- --run && npm run build
 
 # Atualizar OpenAPI se a API mudou

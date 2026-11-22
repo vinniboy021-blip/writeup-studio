@@ -35,7 +35,7 @@ Acesse `http://localhost:8080`. Em desenvolvimento a OpenAPI fica em `/docs` e `
 - IA opcional com proveniência e revisão humana obrigatória
 - Kali MCP autenticado para coleta tipada de artefatos
 - Backup com dump PostgreSQL + objetos + manifesto SHA-256
-- CI com PostgreSQL/Redis reais, Pyright, pip-audit, npm audit e E2E Playwright
+- CI com PostgreSQL/Redis reais, Pyright (zero erros em toda `app/`), pip-audit, npm audit e E2E Playwright
 
 ## Verificação
 
@@ -43,11 +43,16 @@ Acesse `http://localhost:8080`. Em desenvolvimento a OpenAPI fica em `/docs` e `
 # Backend
 cd apps/api
 pip install -e '.[dev]'
+python -m compileall app
+ruff check app --ignore E702,F401
+pyright app/
+pip-audit -r requirements.lock --progress-spinner off
 pytest --cov=app --cov-report=term-missing --cov-fail-under=80
 
 # Frontend
 cd apps/web
 npm ci
+npm audit --audit-level=high
 npm run typecheck && npm run lint && npm test -- --run && npm run build
 ```
 

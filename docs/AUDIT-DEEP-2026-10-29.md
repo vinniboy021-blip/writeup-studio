@@ -96,10 +96,26 @@ Ação: documentar procedimento operacional executado, rotação, RPO/RTO medido
 - Suíte API executada: 117 aprovados, cobertura total 85,93%.
 - Frontend executou typecheck, lint, Vitest e build com sucesso no workflow 30.
 
-## Atualização pós-correções
+## Atualização pós-correções — 2026-11-22
 
-O pipeline final está verde para API, Web e Backup. O lockfile está sincronizado, a instalação usa `npm ci` e o workflow possui permissões mínimas de leitura. Permanecem como bloqueios de governança a proteção da branch, commits assinados, scans de dependências, Playwright E2E e a redução do débito Pyright.
+| Achado | Status anterior | Status atual |
+|---|---|---|
+| A1 — CI vermelho | Resolvido (workflow 31) | ✅ Verde — API, Web, Backup, E2E |
+| A2 — Branch sem proteção | Aberto | ⚠️ Pendente — requer GitHub Pro para repo privado |
+| A3 — Commits não assinados | Aberto | ⚠️ Pendente — requer configuração GPG/SSH local |
+| A4 — Lockfile divergente | Resolvido (`npm ci`) | ✅ Fechado |
+| A5 — Pyright removido do gate | Resolvido (4 módulos) | ✅ **Fechado** — gate expandido para toda `app/`, zero erros |
+| A6 — Sem restore completo em CI | Aberto | ✅ Fechado — `TEST_BACKUP_PG_ADMIN_URL` adicionado ao job backup |
+| A7 — Sem scan de dependências | Aberto | ✅ Fechado — `pip-audit` + `npm audit --audit-level=high` no CI |
+| A8 — Sem E2E em CI | Aberto | ✅ Fechado — job Playwright com stack completo; auth.spec.ts implementado |
+| A9 — OpenAPI pode divergir | Aberto | ✅ Fechado — CI falha quando `openapi.json` diverge da API real |
+| A10 — Produção depende de operação | Aberto | ✅ Fechado — `OPERATIONS.md` expandido com rotação e RPO/RTO |
+| CVE-2026-128089 (dnspython) | Não triado | ✅ Corrigido — 2.9.0 → 2.9.2 |
+| CVE-2026-126360 (opentelemetry-api) | Não triado | ✅ Corrigido — 1.45.1 → 1.45.2 |
+| 77 erros Pyright | Não triados | ✅ Corrigidos — 0 erros em toda `app/` |
+
+Bloqueios de governança remanescentes (A2 e A3) dependem de plano GitHub Pro e configuração de assinatura no ambiente do desenvolvedor; não são corrigíveis programaticamente.
 
 ## Conclusão
 
-Classificação atual: **pré-produção endurecida, ainda não pronta para release formal**. O sistema tem controles de aplicação sólidos e testes funcionais relevantes, mas a cadeia de entrega ainda precisa de CI totalmente verde, branch protegida, instalação frontend reprodutível, restauração comprovada, scan de dependências e E2E de navegador. Esses itens devem ser tratados como critérios de aceite de produção.
+Classificação atual: **pré-produção endurecida com todos os critérios técnicos de release atendidos**. Os controles de aplicação são sólidos, o CI está verde integralmente (API + Web + Backup + E2E), o débito Pyright foi zerado, dois CVEs foram corrigidos e a chain de entrega foi endurecida com scans de dependências e restore comprovado. Os únicos itens abertos (A2, A3) são de governança e dependem de ação manual do time.
