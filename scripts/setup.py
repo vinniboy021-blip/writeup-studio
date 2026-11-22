@@ -108,7 +108,7 @@ def test_certificate(origin: str, cert_dir: Path) -> None:
 
 
 def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(description="Preparação privada do CTF Writeup Studio")
+    parser = argparse.ArgumentParser(description="Preparação privada do Writeup Studio")
     parser.add_argument("--production", action="store_true")
     parser.add_argument("--origin", help="Origem pública; produção requer HTTPS")
     parser.add_argument("--env-file", type=Path)

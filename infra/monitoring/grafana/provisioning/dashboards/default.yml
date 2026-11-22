@@ -1,7 +1,7 @@
 apiVersion: 1
 providers:
-  - name: CTF Studio
-    folder: CTF Studio
+  - name: Writeup Studio
+    folder: Writeup Studio
     type: file
     disableDeletion: true
     updateIntervalSeconds: 30

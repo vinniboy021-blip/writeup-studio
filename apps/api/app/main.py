@@ -40,7 +40,7 @@ async def lifespan(app):
 
 
 app = FastAPI(
-    title="CTF Writeup Studio API",
+    title="Writeup Studio API",
     version="1.0.0",
     license_info={"name": "MIT"},
     docs_url="/docs" if settings.environment != "production" else None,

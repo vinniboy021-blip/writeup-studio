@@ -1,4 +1,4 @@
-# Auditoria profunda — CTF Writeup Studio
+# Auditoria profunda — Writeup Studio
 Data: 2026-10-29
 Commit auditado: 7dfe35024365039b56b0f5019a74ad9bc6f3f3b5
 Repositório: https://github.com/vinniboy021-blip/writeup-studio

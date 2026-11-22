@@ -5,7 +5,7 @@ groups:
         expr: up{job="ctf-api"} == 0
         for: 2m
         labels: {severity: critical}
-        annotations: {summary: "API CTF indisponível há mais de 2 minutos"}
+        annotations: {summary: "API Writeup Studio indisponível há mais de 2 minutos"}
       - alert: CtfApiErrors
         expr: sum(rate(ctf_api_requests_total{status=~"5.."}[5m])) / clamp_min(sum(rate(ctf_api_requests_total[5m])), 0.001) > 0.05
         for: 5m

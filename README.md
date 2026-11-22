@@ -1,4 +1,4 @@
-# CTF Writeup Studio
+# Writeup Studio
 
 Plataforma para organizar competições CTF, preservar evidências e produzir writeups técnicos auditáveis. Código próprio sob licença MIT.
 

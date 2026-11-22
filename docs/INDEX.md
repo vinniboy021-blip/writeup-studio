@@ -1,4 +1,4 @@
-# Documentação do CTF Writeup Studio
+# Documentação do Writeup Studio
 
 Monólito modular com API FastAPI, frontend Next.js, PostgreSQL, armazenamento privado de evidências e jobs RQ. Código próprio sob licença MIT; dependências e serviços mantêm suas licenças originais.
 

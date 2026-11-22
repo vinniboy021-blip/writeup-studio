@@ -51,7 +51,7 @@ class ExportInput(StrictInput):
     include_originals: bool = False
     cover: bool = True
     theme: Literal["dark", "light"] = "light"
-    brand: str = Field(default="CTF Writeup Studio", max_length=160)
+    brand: str = Field(default="Writeup Studio", max_length=160)
     header: str = Field(default="", max_length=240)
     footer: str = Field(default="", max_length=240)
 

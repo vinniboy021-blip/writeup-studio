@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "CTF Writeup Studio API",
+    "title": "Writeup Studio API",
     "license": {
       "name": "MIT"
     },
@@ -6058,7 +6058,7 @@
             "type": "string",
             "maxLength": 160,
             "title": "Brand",
-            "default": "CTF Writeup Studio"
+            "default": "Writeup Studio"
           },
           "header": {
             "type": "string",

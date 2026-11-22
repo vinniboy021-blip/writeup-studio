@@ -78,7 +78,7 @@ class MCPClient:
             {
                 "protocolVersion": "2025-03-26",
                 "capabilities": {},
-                "clientInfo": {"name": "CTF Writeup Studio", "version": "1.0.0"},
+                "clientInfo": {"name": "Writeup Studio", "version": "1.0.0"},
             },
         )
         if not isinstance(result, dict):

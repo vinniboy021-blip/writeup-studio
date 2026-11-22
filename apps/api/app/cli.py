@@ -13,7 +13,7 @@ from app.security import audit, password_hash
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Administração local do CTF Writeup Studio")
+    parser = argparse.ArgumentParser(description="Administração local do Writeup Studio")
     parser.add_argument("command", choices=["create-admin", "reset-password", "disable-user"])
     parser.add_argument("--email", required=True)
     parser.add_argument("--name", default="Administrador")

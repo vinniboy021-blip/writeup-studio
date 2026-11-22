@@ -111,7 +111,7 @@ def html_document(snapshot, options, images):
     if options.get("header"):
         body.append("<header>" + escape(options["header"]) + "</header>")
     if options.get("cover", True):
-        body.append("<p>" + escape(options.get("brand", "CTF Writeup Studio")) + "</p>")
+        body.append("<p>" + escape(options.get("brand", "Writeup Studio")) + "</p>")
     body += ["<h1>" + escape(snapshot["title"]) + "</h1>",
              f"<p>Versão {snapshot['version']} · {escape(str(snapshot.get('created_at', '')))}</p>",
              '<nav aria-label="Índice"><h2>Índice</h2><ol>']
@@ -148,7 +148,7 @@ def pdf_document(snapshot, options, images):
     def paragraph(text, style="Normal"):
         story.append(Paragraph(escape(text).replace("\n", "<br/>"), styles[style]))
     if options.get("cover", True):
-        paragraph(options.get("brand", "CTF Writeup Studio"))
+        paragraph(options.get("brand", "Writeup Studio"))
     paragraph(snapshot["title"], "Title")
     paragraph(f"Versão {snapshot['version']}")
     paragraph("Índice", "Heading2")
@@ -206,7 +206,7 @@ def pdf_document(snapshot, options, images):
         canvas.drawString(40, 25, options.get("footer", "")[:120])
         canvas.drawRightString(555, 25, str(document.page))
         canvas.restoreState()
-    SimpleDocTemplate(output, title=snapshot["title"], author=options.get("brand", "CTF Writeup Studio"),
+    SimpleDocTemplate(output, title=snapshot["title"], author=options.get("brand", "Writeup Studio"),
                       topMargin=55, bottomMargin=45).build(story, onFirstPage=page, onLaterPages=page)
     return output.getvalue()
 

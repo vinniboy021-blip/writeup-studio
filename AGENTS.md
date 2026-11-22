@@ -1,4 +1,4 @@
-# CTF Writeup Studio
+# Writeup Studio
 
 - Licença MIT e API `/api/v1`; português na interface e documentação.
 - Backend monólito modular FastAPI, SQLAlchemy 2 e Alembic; PostgreSQL em produção.
