@@ -67,7 +67,8 @@ def list_resources(db, actor, model, page, page_size, q=None, status=None, categ
     if hasattr(model, "deleted_at"):
         statement = statement.where(model.deleted_at.is_(None))
     if q:
-        statement = statement.where(model.name.ilike(f"%{q}%"))
+        escaped = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        statement = statement.where(model.name.ilike(f"%{escaped}%", escape="\\"))
     if status:
         statement = statement.where(model.status == status)
     if category and hasattr(model, "category"):
@@ -1009,20 +1010,24 @@ def search(
             else:
                 continue
         if tool or language:
+            def _esc(v: str) -> str:
+                return v.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
             if model is m.Writeup:
                 content = cast(model.document, String)
                 if tool:
-                    query = query.where(or_(content.ilike(f"%{tool}%"), cast(model.tools, String).ilike(f"%{tool}%")))
+                    et = _esc(tool)
+                    query = query.where(or_(content.ilike(f"%{et}%", escape="\\"), cast(model.tools, String).ilike(f"%{et}%", escape="\\")))
                 if language:
+                    el = _esc(language)
                     query = query.where(
-                        or_(content.ilike(f"%```{language}%"), cast(model.languages, String).ilike(f"%{language}%"))
+                        or_(content.ilike(f"%```{el}%", escape="\\"), cast(model.languages, String).ilike(f"%{el}%", escape="\\"))
                     )
             elif model is m.Evidence:
                 content = cast(model.metadata_json, String)
                 if tool:
-                    query = query.where(content.ilike(f"%{tool}%"))
+                    query = query.where(content.ilike(f"%{_esc(tool)}%", escape="\\"))
                 if language:
-                    query = query.where(content.ilike(f"%{language}%"))
+                    query = query.where(content.ilike(f"%{_esc(language)}%", escape="\\"))
             else:
                 continue
         projections.append(

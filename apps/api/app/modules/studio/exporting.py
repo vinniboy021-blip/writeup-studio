@@ -95,12 +95,21 @@ def render_markdown(content, images=None):
         return f'<img src="{images[key]["data_url"]}" alt="{escape(token.content, quote=True)}">'
     md.add_render_rule("image", image_rule)
     rendered = md.render(content)
+    def _allowed_attrs(tag, name, value):
+        if tag == "img" and name == "src":
+            return value.startswith(("https://", "http://", "data:image/"))
+        if tag == "a" and name == "href":
+            return value.startswith(("https://", "http://", "mailto:"))
+        if name in {"alt", "title", "class"}:
+            return True
+        return False
+
     return bleach.clean(rendered,
         tags={"p", "h1", "h2", "h3", "h4", "h5", "h6", "strong", "em", "s", "blockquote",
               "ul", "ol", "li", "code", "pre", "a", "img", "hr", "br", "table", "thead", "tbody",
               "tr", "th", "td", "span", "div"},
-        attributes={"a": ["href", "title"], "img": ["src", "alt"], "*": ["class"]},
-        protocols={"http", "https", "mailto", "data"}, strip=True)
+        attributes=_allowed_attrs,
+        strip=True)
 
 
 def html_document(snapshot, options, images):
